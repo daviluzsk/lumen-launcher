@@ -1,0 +1,63 @@
+{
+  "name": "prisma-launcher",
+  "productName": "Lumen",
+  "version": "1.0.0",
+  "description": "Launcher de Minecraft com interface Liquid Glass, recriado a partir do Prism Launcher.",
+  "author": "Lumen",
+  "license": "GPL-3.0-only",
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "dist": "electron-vite build && electron-builder --win"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11",
+    "yauzl": "^3.2.0"
+  },
+  "devDependencies": {
+    "@fontsource-variable/inter": "^5.2.5",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/yauzl": "^2.10.3",
+    "@vitejs/plugin-react": "^6.1.2",
+    "electron": "^45.0.0",
+    "electron-builder": "^26.0.0",
+    "electron-vite": "^6.0.0",
+    "lucide-react": "^1.61.0",
+    "motion": "^14.6.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "~5.9.2",
+    "vite": "^8.3.5"
+  },
+  "build": {
+    "appId": "app.prisma.launcher",
+    "productName": "Lumen",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "daviluzsk",
+      "repo": "lumen-launcher"
+    }
+  }
+}
