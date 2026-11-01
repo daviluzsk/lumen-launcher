@@ -1,7 +1,7 @@
 {
   "name": "prisma-launcher",
   "productName": "Lumen",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Launcher de Minecraft com interface Liquid Glass, recriado a partir do Prism Launcher.",
   "author": "Lumen",
   "license": "GPL-3.0-only",

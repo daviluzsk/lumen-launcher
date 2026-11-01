@@ -249,7 +249,6 @@ function parseModlist(html: string): { name: string; pageUrl: string }[] {
   return out
 }
 
-const normName = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]/g, '')
 const cleanName = (s: string): string =>
   s
     .replace(/\(by [^)]*\)/gi, '')
@@ -258,6 +257,18 @@ const cleanName = (s: string): string =>
     .replace(/\s+/g, ' ')
     .trim()
 const cfSlugOf = (url: string): string | null => url.match(/mc-mods\/([a-z0-9-]+)/i)?.[1]?.toLowerCase() ?? null
+
+// Token matching tolerates articles, "&", loader words and word order so "The Twilight Forest"
+// matches Modrinth's "Twilight Forest" without matching unrelated mods.
+const STOP = new Set(['the', 'a', 'an', 'of', 'and', 'mod', 'forge', 'fabric', 'neoforge', 'quilt', 'for', 'minecraft', 'edition', 'reforged', 'continued', 'remastered'])
+const tokens = (s: string): string[] =>
+  cleanName(s)
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, ' ')
+    .split(/\s+/)
+    .filter((t) => t && !STOP.has(t))
+const sameSet = (a: string[], b: string[]): boolean => a.length > 0 && a.length === b.length && [...a].sort().join('|') === [...b].sort().join('|')
+const subset = (a: string[], b: string[]): boolean => a.length > 0 && a.every((t) => b.includes(t))
 
 /**
  * Tries to fetch each listed mod from Modrinth (open API, no key). Matches conservatively — exact
@@ -279,16 +290,25 @@ async function resolveViaModrinth(
 
   const one = async (mod: { name: string; pageUrl: string }): Promise<void> => {
     const q = cleanName(mod.name)
+    const qt = tokens(mod.name)
     const cfSlug = cfSlugOf(mod.pageUrl)
     try {
-      const res = await mrSearch({ query: q, projectType: 'mod', loader: loaders?.[0] ?? null, gameVersion: mc, sort: 'relevance', offset: 0, limit: 6 })
+      // No gameVersion facet in the search (it buries exact-name mods behind addons); the version
+      // check below (mrVersions filtered to mc+loader) still guarantees compatibility.
+      const res = await mrSearch({ query: q, projectType: 'mod', loader: loaders?.[0] ?? null, gameVersion: null, sort: 'relevance', offset: 0, limit: 12 })
+      // Only confident matches: exact slug, exact token set (title or slug), or a hit whose name
+      // is a LESS-specific prefix of the query (its tokens ⊆ query). We never match a MORE-specific
+      // hit (query ⊆ hit) — that grabs the wrong addon (e.g. "Twilight Forest: The Lost Blocks").
       const hit =
-        res.hits.find((h) => normName(h.title) === normName(q)) ??
-        (cfSlug ? res.hits.find((h) => h.slug === cfSlug || normName(h.slug) === normName(cfSlug)) : undefined)
+        (cfSlug ? res.hits.find((h) => h.slug === cfSlug) : undefined) ??
+        res.hits.find((h) => sameSet(qt, tokens(h.title))) ??
+        res.hits.find((h) => sameSet(qt, tokens(h.slug.replace(/-/g, ' ')))) ??
+        res.hits.find((h) => qt.length >= 2 && subset(tokens(h.title), qt))
       if (!hit) {
         missing.push(mod)
         return
       }
+      if (process.env['PRISMA_SELFTEST']) console.log(`[match] ${mod.name}  ->  ${hit.title} (${hit.slug})`)
       const versions = await mrVersions(hit.project_id, loaders, [mc])
       const v = versions.find((x) => x.version_type === 'release') ?? versions[0]
       const file = v?.files.find((f) => f.primary) ?? v?.files[0]

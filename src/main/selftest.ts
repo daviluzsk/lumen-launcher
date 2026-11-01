@@ -28,7 +28,7 @@ export async function selfTest(): Promise<boolean> {
     const cfg = await fs.readdir(path.join(inst.gameDir, 'config')).catch(() => [] as string[])
     const jars = (await fs.readdir(path.join(inst.gameDir, 'mods')).catch(() => [] as string[])).filter((f) => f.endsWith('.jar'))
     log(`importou: ${inst.name} / ${inst.loader} ${inst.loaderVersion} / mc ${inst.mcVersion} / configs=${cfg.length} / mods-baixados=${jars.length} / faltando=${r.blocked.length}`)
-    log(`faltando (ex): ${r.blocked.slice(0, 5).map((b) => b.name).join(' | ')}`)
+    log(`FALTANDO (${r.blocked.length}): ${r.blocked.map((b) => b.name).join(' | ')}`)
     const ok = inst.loader === 'forge' && inst.mcVersion === '1.20.1' && cfg.length > 10 && jars.length > 0
     if (process.env['PRISMA_SELFTEST_KEEP'] !== '1') await deleteInstance(r.instanceId).catch(() => undefined)
     log(ok ? 'SELFTEST OK' : 'SELFTEST FALHOU')
